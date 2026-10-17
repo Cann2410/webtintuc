@@ -1,43 +1,81 @@
+// DỮ LIỆU DỰ PHÒNG CHỐNG TRẮNG TRANG
+const DEFAULT_MENU = [
+    { "id": "home", "title": "Home", "type": "home" },
+    { "id": "Thế giới", "title": "Thế giới", "type": "category" },
+    { "id": "Thời sự", "title": "Thời sự", "type": "category" },
+    { "id": "Thể thao", "title": "Thể thao", "type": "category" }
+];
+
+const DEFAULT_POSTS = [
+    {
+        "id": "dtri-20261017001",
+        "title": "Loạt đề xuất mới về biển báo, khoảng cách đặt biển cảnh báo trên cao tốc",
+        "slug": "loat-de-xuat-moi-ve-bien-bao-khoang-cach-dat-bien-canh-bao-tren-cao-toc",
+        "excerpt": "(Dân trí) - Cục Đường bộ Việt Nam đề xuất nhiều thay đổi về biển báo, đèn tín hiệu, khoảng cách đặt biển cảnh báo và hệ thống chỉ dẫn trên đường cao tốc.",
+        "content": "Cục Đường bộ Việt Nam vừa hoàn thiện bản dự thảo đề xuất quy chuẩn mới về hệ thống biển báo giao thông trên đường cao tốc...",
+        "thumbnail": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800&auto=format&fit=crop",
+        "image": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800&auto=format&fit=crop",
+        "author": "Văn Hưng",
+        "category": "Thời sự",
+        "categoryId": "Thời sự",
+        "publishedAt": "2026-10-14 23:30",
+        "source": "dantri.com.vn",
+        "url": "https://dantri.com.vn/thoi-su/loat-de-xuat-moi.htm"
+    }
+];
+
 // === 1. ĐỌC VÀ QUẢN LÝ DỮ LIỆU LOCALSTORAGE ===
 async function loadInitialData() {
+    // 1. Nạp Menu
     try {
         const resMenu = await fetch('./data/menu.json');
         if (resMenu.ok) {
             const dataMenu = await resMenu.json();
-            if (dataMenu && dataMenu.menu) {
+            if (dataMenu && dataMenu.menu && dataMenu.menu.length > 0) {
                 localStorage.setItem('categories', JSON.stringify(dataMenu.menu));
             }
         }
-    } catch(e) { 
-        console.error("Lỗi đọc menu.json:", e); 
+    } catch(e) {
+        console.warn("Không fetch được menu.json, chuyển sang dùng dữ liệu mặc định.");
+    }
+    if (!localStorage.getItem('categories')) {
+        localStorage.setItem('categories', JSON.stringify(DEFAULT_MENU));
     }
 
+    // 2. Nạp Bài viết
     if (!localStorage.getItem('posts')) {
         try {
             const resPosts = await fetch('./data/posts.json');
             if (resPosts.ok) {
                 const posts = await resPosts.json();
-                localStorage.setItem('posts', JSON.stringify(posts || []));
+                if (posts && posts.length > 0) {
+                    localStorage.setItem('posts', JSON.stringify(posts));
+                }
             }
-        } catch(e) { 
-            console.error("Lỗi đọc posts.json:", e); 
+        } catch(e) {
+            console.warn("Không fetch được posts.json, chuyển sang dùng dữ liệu mặc định.");
         }
+    }
+    if (!localStorage.getItem('posts')) {
+        localStorage.setItem('posts', JSON.stringify(DEFAULT_POSTS));
     }
 }
 
 function getPosts() { 
     try {
-        return JSON.parse(localStorage.getItem('posts')) || []; 
+        const data = JSON.parse(localStorage.getItem('posts'));
+        return (data && data.length > 0) ? data : DEFAULT_POSTS; 
     } catch(e) {
-        return [];
+        return DEFAULT_POSTS;
     }
 }
 
 function getCategories() { 
     try {
-        return JSON.parse(localStorage.getItem('categories')) || []; 
+        const data = JSON.parse(localStorage.getItem('categories'));
+        return (data && data.length > 0) ? data : DEFAULT_MENU; 
     } catch(e) {
-        return [];
+        return DEFAULT_MENU;
     }
 }
 
@@ -100,8 +138,6 @@ function createGridHtml(postsList) {
         const defaultImg = "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800&auto=format&fit=crop";
         const rawExcerpt = featuredLarge.excerpt || '';
         const excerptText = rawExcerpt.startsWith('(Dân trí)') ? rawExcerpt : (rawExcerpt ? `(Dân trí) - ${rawExcerpt}` : '');
-        
-        // ĐỌC CẢ THUỘC TÍNH THUMBNAIL VÀ IMAGE
         const imgUrl = featuredLarge.thumbnail || featuredLarge.image || defaultImg;
 
         html += `
@@ -140,7 +176,6 @@ function renderCategory(catId = 'home') {
     const posts = getPosts();
     document.querySelectorAll('.nav-menu a').forEach(el => el.classList.remove('active'));
     
-    // Tìm phần tử Nav bằng getElementById để an toàn với ID có Tiếng Việt
     const activeNav = document.getElementById(`nav-${catId}`);
     if (activeNav) activeNav.classList.add('active');
 
@@ -404,7 +439,7 @@ async function resetDefaultData() {
     }
 }
 
-// KHỞI CHẠY HỆ THỐNG
+// KHỞI CHẠY TRANG WEB
 window.onload = async function() {
     await loadInitialData();
     renderNavbar();
